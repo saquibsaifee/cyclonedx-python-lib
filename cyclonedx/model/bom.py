@@ -60,6 +60,7 @@ class BomMetaData:
     """
 
     def __init__(self, *, tools: Optional[Iterable[Tool]] = None,
+                 # update the signature to be tools: Union[Optional[Iterable[Tool], Optional[Iterable[Component], Optional[Iterable[Service]] = None?
                  authors: Optional[Iterable[OrganizationalContact]] = None, component: Optional[Component] = None,
                  supplier: Optional[OrganizationalEntity] = None,
                  licenses: Optional[Iterable[License]] = None,
@@ -86,6 +87,9 @@ class BomMetaData:
 
         if not tools:
             self.tools.add(ThisTool)
+            # add component object for ThisTool
+
+        # add a warning if bom.metadata.tools.tool is used?
 
     @property
     @serializable.type_mapping(serializable.helpers.XsdDateTime)
