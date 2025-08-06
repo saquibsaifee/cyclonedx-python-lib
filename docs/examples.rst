@@ -29,3 +29,13 @@ Complex Deserialize
 .. literalinclude:: ../examples/complex_deserialize.py
   :language: python
   :linenos:
+
+Validate SBOMs
+--------------
+
+The library ships with strict and non-strict validators that allow you to validate your SBOMs against the CycloneDX JSON and XML schemas. This example shows how to select the appropriate validator based on the file extension, handle missing optional dependencies, and report any validation errors.
+
+.. literalinclude:: ../examples/validate_sbom.py
+    :language: python
+    :linenos:
+
