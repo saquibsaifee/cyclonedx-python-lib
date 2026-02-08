@@ -45,7 +45,6 @@ If you're looking for a CycloneDX tool to run to generate (SBOM) software bill-o
    install
    architecture
    examples
-   validation
    contributing
    support
    changelog
