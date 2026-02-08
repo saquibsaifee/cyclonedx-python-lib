@@ -25,7 +25,7 @@ Why Validate SBOMs?
 
 Validation ensures that:
 
-* Your SBOM conforms to the CycloneDX schema specification
+* Your JSON/XML conforms to the CycloneDX schema specification
 * All required fields are present and correctly formatted
 * Data types and structures match the specification
 * The SBOM can be reliably consumed by other tools and systems
