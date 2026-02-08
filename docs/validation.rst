@@ -28,7 +28,7 @@ Validation ensures that:
 * Your JSON/XML conforms to the CycloneDX schema specification
 * All required fields are present and correctly formatted
 * Data types and structures match the specification
-* The SBOM can be reliably consumed by other tools and systems
+* The JSON/XML can be reliably consumed by other tools and systems
 
 Basic Validation
 ----------------
