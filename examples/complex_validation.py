@@ -144,7 +144,7 @@ def validate_sbom(raw_data: str) -> bool:
     # 1. Attempt to detect JSON and its version
     try:
         data = json.loads(raw_data)
-        output_format = OutputFormat.JSON
+        input_format = OutputFormat.JSON
         spec_version_str = data.get('specVersion')
         if not spec_version_str:
             print('Error: Missing specVersion in JSON SBOM', file=sys.stderr)
