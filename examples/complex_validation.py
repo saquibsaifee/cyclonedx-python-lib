@@ -19,6 +19,8 @@ import json
 import sys
 from typing import TYPE_CHECKING
 
+from lxml import etree  # type: ignore[import-untyped]
+
 from cyclonedx.exception import MissingOptionalDependencyException
 from cyclonedx.schema import OutputFormat, SchemaVersion
 from cyclonedx.validation import make_schemabased_validator
@@ -151,7 +153,6 @@ def _detect_json_format(raw_data: str) -> tuple[OutputFormat, SchemaVersion] | N
 def _detect_xml_format(raw_data: str) -> tuple[OutputFormat, SchemaVersion] | None:
     """Detect XML format and extract schema version."""
     try:
-        from lxml import etree  # type: ignore[import-untyped]
         xml_tree = etree.fromstring(raw_data.encode('utf-8'))
         # Extract version from CycloneDX namespace
         schema_version = SchemaVersion.V1_5  # Default
@@ -163,7 +164,7 @@ def _detect_xml_format(raw_data: str) -> tuple[OutputFormat, SchemaVersion] | No
                 except ValueError:
                     pass
         return (OutputFormat.XML, schema_version)
-    except (ImportError, etree.XMLSyntaxError):
+    except etree.XMLSyntaxError:
         print('Error: Unknown or malformed SBOM format', file=sys.stderr)
         return None
     except Exception as e:
