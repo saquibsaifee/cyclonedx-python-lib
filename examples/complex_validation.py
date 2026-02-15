@@ -28,12 +28,8 @@ if TYPE_CHECKING:
     from cyclonedx.validation.xml import XmlValidator
 
 """
-This example demonstrates how to validate CycloneDX SBOMs (both JSON and XML).
-Validation is built upon `jsonschema` for JSON and `lxml` for XML.
-To use validation, ensure you have installed the library with the validation extra:
-  pip install cyclonedx-python-lib[validation]
-  or
-  pip install cyclonedx-python-lib[json-validation,xml-validation]
+This example demonstrates how to validate CycloneDX documents (both JSON and XML).
+Make sure to have the needed dependencies installed - install the library's extra 'validation' for that.
 """
 
 # region Sample SBOMs
@@ -100,7 +96,7 @@ try:
     validation_errors = json_validator.validate_str(INVALID_JSON_SBOM)
     if validation_errors:
         print('Validation failed as expected.')
-        print(f'Error Message: {validation_errors.message}')
+        print(f'Error Message: {validation_errors.data.message}')
         print(f'JSON Path:     {validation_errors.data.json_path}')
         print(f'Invalid Data:  {validation_errors.data.instance}')
 except MissingOptionalDependencyException as error:
@@ -119,8 +115,8 @@ print('--- XML Validation ---')
 xml_validator: 'XmlValidator' = make_schemabased_validator(OutputFormat.XML, SchemaVersion.V1_5)
 
 try:
-    validation_errors = xml_validator.validate_str(XML_SBOM)
-    if validation_errors:
+    xml_validation_errors = xml_validator.validate_str(XML_SBOM)
+    if xml_validation_errors:
         print('XML SBOM is invalid!', file=sys.stderr)
     else:
         print('XML SBOM is valid')
@@ -138,51 +134,63 @@ print('\n' + '=' * 30 + '\n')
 print('--- Dynamic Validation ---')
 
 
-def validate_sbom(raw_data: str) -> bool:
-    """Validate an SBOM by detecting its format and version."""
-
-    # 1. Attempt to detect JSON and its version
+def _detect_json_format(raw_data: str) -> tuple[OutputFormat, SchemaVersion] | None:
+    """Detect JSON format and extract schema version."""
     try:
         data = json.loads(raw_data)
-        input_format = OutputFormat.JSON
         spec_version_str = data.get('specVersion')
         if not spec_version_str:
             print('Error: Missing specVersion in JSON SBOM', file=sys.stderr)
-            return False
+            return None
         schema_version = SchemaVersion.from_version(spec_version_str)
+        return (OutputFormat.JSON, schema_version)
     except (json.JSONDecodeError, ValueError):
-        # 2. Attempt to detect XML and its version
-        try:
-            from lxml import etree
-            xml_tree = etree.fromstring(raw_data.encode('utf-8'))
-            output_format = OutputFormat.XML
-            # Extract version from CycloneDX namespace
-            schema_version = SchemaVersion.V1_5  # Default
-            for ns in xml_tree.nsmap.values():
-                if ns and ns.startswith('http://cyclonedx.org/schema/bom/'):
-                    try:
-                        schema_version = SchemaVersion.from_version(ns.split('/')[-1])
-                        break
-                    except ValueError:
-                        pass
-        except (ImportError, etree.XMLSyntaxError):
-            print('Error: Unknown or malformed SBOM format', file=sys.stderr)
-            return False
-        except Exception as e:
-            print(f'Error: Format detection failed: {e}', file=sys.stderr)
-            return False
+        return None
 
-    # 3. Perform validation using the detected format and version
+
+def _detect_xml_format(raw_data: str) -> tuple[OutputFormat, SchemaVersion] | None:
+    """Detect XML format and extract schema version."""
     try:
-        validator = make_schemabased_validator(output_format, schema_version)
+        from lxml import etree  # type: ignore[import-untyped]
+        xml_tree = etree.fromstring(raw_data.encode('utf-8'))
+        # Extract version from CycloneDX namespace
+        schema_version = SchemaVersion.V1_5  # Default
+        for ns in xml_tree.nsmap.values():
+            if ns and ns.startswith('http://cyclonedx.org/schema/bom/'):
+                try:
+                    schema_version = SchemaVersion.from_version(ns.split('/')[-1])
+                    break
+                except ValueError:
+                    pass
+        return (OutputFormat.XML, schema_version)
+    except (ImportError, etree.XMLSyntaxError):
+        print('Error: Unknown or malformed SBOM format', file=sys.stderr)
+        return None
+    except Exception as e:
+        print(f'Error: Format detection failed: {e}', file=sys.stderr)
+        return None
+
+
+def validate_sbom(raw_data: str) -> bool:
+    """Validate an SBOM by detecting its format and version."""
+    # Detect format and version
+    format_info = _detect_json_format(raw_data) or _detect_xml_format(raw_data)
+    if not format_info:
+        return False
+
+    input_format, schema_version = format_info
+
+    # Perform validation
+    try:
+        validator = make_schemabased_validator(input_format, schema_version)
         errors = validator.validate_str(raw_data)
 
         if errors:
-            print(f'Validation failed for {output_format.name} version {schema_version.to_version()}', file=sys.stderr)
+            print(f'Validation failed for {input_format.name} version {schema_version.to_version()}', file=sys.stderr)
             print(f'Reason: {errors}', file=sys.stderr)
             return False
 
-        print(f'Successfully validated {output_format.name} SBOM (Version {schema_version.to_version()})')
+        print(f'Successfully validated {input_format.name} SBOM (Version {schema_version.to_version()})')
         return True
 
     except MissingOptionalDependencyException as error:
