@@ -39,9 +39,9 @@ from ..schema.schema import (
     SchemaVersion1Dot6,
     SchemaVersion1Dot7,
 )
-from . import DataClassification, ExternalReference, Property, XsUri
+from . import DataFlow, ExternalReference, Property, XsUri
 from .bom_ref import BomRef
-from .contact import OrganizationalEntity
+from .contact import OrganizationalContact, OrganizationalEntity
 from .dependency import Dependable
 from .license import License, LicenseRepository, _LicenseRepositorySerializationHelper
 from .release_note import ReleaseNotes
@@ -67,7 +67,7 @@ class Service(Dependable):
         endpoints: Optional[Iterable[XsUri]] = None,
         authenticated: Optional[bool] = None,
         x_trust_boundary: Optional[bool] = None,
-        data: Optional[Iterable[DataClassification]] = None,
+        data: Optional[Iterable['Data']] = None,
         licenses: Optional[Iterable[License]] = None,
         external_references: Optional[Iterable[ExternalReference]] = None,
         properties: Optional[Iterable[Property]] = None,
@@ -253,18 +253,18 @@ class Service(Dependable):
     @property
     @serializable.xml_array(serializable.XmlArraySerializationType.NESTED, 'classification')
     @serializable.xml_sequence(10)
-    def data(self) -> 'SortedSet[DataClassification]':
+    def data(self) -> 'SortedSet[Data]':
         """
         Specifies the data classification.
 
         Returns:
-            Set of `DataClassification`
+            Set of `Data`
         """
         # TODO since CDX1.5 also supports `dataflow`, not only `DataClassification`
         return self._data
 
     @data.setter
-    def data(self, data: Iterable[DataClassification]) -> None:
+    def data(self, data: Iterable['Data']) -> None:
         self._data = SortedSet(data)
 
     @property
@@ -387,3 +387,243 @@ class Service(Dependable):
 
     def __repr__(self) -> str:
         return f'<Service bom-ref={self.bom_ref}, group={self.group}, name={self.name}, version={self.version}>'
+
+
+@serializable.serializable_class
+class OrganizationOrIndividualType:
+    """
+    This is our internal representation of the organizationOrIndividualType complex type within the CycloneDX standard.
+
+    .. note::
+        See the CycloneDX Schema: https://cyclonedx.org/docs/1.6/xml/#type_organizationOrIndividualType
+    """
+
+    def __init__(
+        self, *,
+        organization: Optional[OrganizationalEntity] = None,
+        individual: Optional[OrganizationalContact] = None,
+    ) -> None:
+        self.organization = organization
+        self.individual = individual
+
+    @property
+    @serializable.xml_sequence(1)
+    @serializable.xml_name('organization')
+    def organization(self) -> Optional[OrganizationalEntity]:
+        return self._organization
+
+    @organization.setter
+    def organization(self, organization: Optional[OrganizationalEntity]) -> None:
+        self._organization = organization
+
+    @property
+    @serializable.xml_sequence(2)
+    @serializable.xml_name('individual')
+    def individual(self) -> Optional[OrganizationalContact]:
+        return self._individual
+
+    @individual.setter
+    def individual(self, individual: Optional[OrganizationalContact]) -> None:
+        self._individual = individual
+
+    def __comparable_tuple(self) -> _ComparableTuple:
+        return _ComparableTuple((
+            self.organization, self.individual
+        ))
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, OrganizationOrIndividualType):
+            return self.__comparable_tuple() == other.__comparable_tuple()
+        return False
+
+    def __lt__(self, other: Any) -> bool:
+        if isinstance(other, OrganizationOrIndividualType):
+            return self.__comparable_tuple() < other.__comparable_tuple()
+        return NotImplemented
+
+    def __hash__(self) -> int:
+        return hash(self.__comparable_tuple())
+
+
+@serializable.serializable_class
+class DataGovernance:
+    """
+    This is our internal representation of the dataGovernance complex type within the CycloneDX standard.
+
+    .. note::
+        See the CycloneDX Schema: https://cyclonedx.org/docs/1.6/xml/#type_dataGovernance
+    """
+
+    def __init__(
+        self, *,
+        custodians: Optional[Iterable[OrganizationOrIndividualType]] = None,
+        stewards: Optional[Iterable[OrganizationOrIndividualType]] = None,
+        owners: Optional[Iterable[OrganizationOrIndividualType]] = None,
+    ) -> None:
+        self.custodians = custodians or []
+        self.stewards = stewards or []
+        self.owners = owners or []
+
+    @property
+    @serializable.xml_sequence(1)
+    @serializable.xml_array(serializable.XmlArraySerializationType.NESTED, 'custodian')
+    def custodians(self) -> 'SortedSet[OrganizationOrIndividualType]':
+        return self._custodians
+
+    @custodians.setter
+    def custodians(self, custodians: Iterable[OrganizationOrIndividualType]) -> None:
+        self._custodians = SortedSet(custodians)
+
+    @property
+    @serializable.xml_sequence(2)
+    @serializable.xml_array(serializable.XmlArraySerializationType.NESTED, 'steward')
+    def stewards(self) -> 'SortedSet[OrganizationOrIndividualType]':
+        return self._stewards
+
+    @stewards.setter
+    def stewards(self, stewards: Iterable[OrganizationOrIndividualType]) -> None:
+        self._stewards = SortedSet(stewards)
+
+    @property
+    @serializable.xml_sequence(3)
+    @serializable.xml_array(serializable.XmlArraySerializationType.NESTED, 'owner')
+    def owners(self) -> 'SortedSet[OrganizationOrIndividualType]':
+        return self._owners
+
+    @owners.setter
+    def owners(self, owners: Iterable[OrganizationOrIndividualType]) -> None:
+        self._owners = SortedSet(owners)
+
+    def __comparable_tuple(self) -> _ComparableTuple:
+        return _ComparableTuple((
+            _ComparableTuple(self.custodians), _ComparableTuple(self.stewards), _ComparableTuple(self.owners)
+        ))
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, DataGovernance):
+            return self.__comparable_tuple() == other.__comparable_tuple()
+        return False
+
+    def __lt__(self, other: Any) -> bool:
+        if isinstance(other, DataGovernance):
+            return self.__comparable_tuple() < other.__comparable_tuple()
+        return NotImplemented
+
+    def __hash__(self) -> int:
+        return hash(self.__comparable_tuple())
+
+
+@serializable.serializable_class
+class Data:
+    """
+    This is our internal representation of the service.data complex type within the CycloneDX standard.
+
+    .. note::
+    See the CycloneDX Schema: https://cyclonedx.org/docs/1.6/xml/#type_service
+    """
+
+    def __init__(
+        self, *,
+        flow: DataFlow,
+        classification: str,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        governance: Optional[DataGovernance] = None,
+        source: Optional[Iterable[Union[BomRef, XsUri]]] = None,
+        destination: Optional[Iterable[Union[BomRef, XsUri]]] = None
+    ) -> None:
+        self.flow = flow
+        self.classification = classification
+        self.name = name
+        self.description = description
+        self.governance = governance
+        self.source = source
+        self.destination = destination
+
+    @property
+    @serializable.xml_attribute()
+    def flow(self) -> DataFlow:
+        return self._flow
+
+    @flow.setter
+    def flow(self, flow: DataFlow) -> None:
+        self._flow = flow
+
+    @property
+    @serializable.xml_name('.')
+    @serializable.xml_string(serializable.XmlStringSerializationType.NORMALIZED_STRING)
+    @serializable.xml_sequence(1)
+    def classification(self) -> str:
+        return self._classification
+
+    @classification.setter
+    def classification(self, classification: str) -> None:
+        self._classification = classification
+
+    @property
+    @serializable.xml_string(serializable.XmlStringSerializationType.NORMALIZED_STRING)
+    @serializable.xml_sequence(2)
+    def name(self) -> Optional[str]:
+        return self._name
+
+    @name.setter
+    def name(self, name: Optional[str]) -> None:
+        self._name = name
+
+    @property
+    @serializable.xml_sequence(3)
+    @serializable.xml_string(serializable.XmlStringSerializationType.STRING)
+    def description(self) -> Optional[str]:
+        return self._description
+
+    @description.setter
+    def description(self, description: Optional[str]) -> None:
+        self._description = description
+
+    @property
+    @serializable.xml_sequence(4)
+    def governance(self) -> Optional[DataGovernance]:
+        return self._governance
+
+    @governance.setter
+    def governance(self, governance: Optional[DataGovernance]) -> None:
+        self._governance = governance
+
+    @property
+    @serializable.xml_sequence(5)
+    def source(self) -> Optional[Iterable[Union[BomRef, XsUri]]]:
+        return self._source
+
+    @source.setter
+    def source(self, source: Optional[Iterable[Union[BomRef, XsUri]]]) -> None:
+        self._source = source
+
+    @property
+    @serializable.xml_sequence(6)
+    def destination(self) -> Optional[Iterable[Union[BomRef, XsUri]]]:
+        return self._destination
+
+    @destination.setter
+    def destination(self, destination: Optional[Iterable[Union[BomRef, XsUri]]]) -> None:
+        self._destination = destination
+
+    def __comparable_tuple(self) -> _ComparableTuple:
+        return _ComparableTuple((
+            self.flow, self.classification, self.name, self.description, self.governance
+        ))
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, Data):
+            return self.__comparable_tuple() == other.__comparable_tuple()
+        return False
+
+    def __lt__(self, other: Any) -> bool:
+        if isinstance(other, Data):
+            return self.__comparable_tuple() < other.__comparable_tuple()
+        return NotImplemented
+
+    def __hash__(self) -> int:
+        return hash(self.__comparable_tuple())
+
+    def __repr__(self) -> str:
+        return f'<Data flow={self.flow}, classification={self.classification}>'
