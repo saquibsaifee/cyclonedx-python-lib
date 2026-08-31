@@ -14,6 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 # Copyright (c) OWASP Foundation. All Rights Reserved.
+# flake8: noqa: C901
 
 import json
 import sys
@@ -106,6 +107,20 @@ else:
             print(f'Error Message: {validation_errors.data.message}')
             print(f'JSON Path:     {validation_errors.data.json_path}')
             print(f'Invalid Data:  {validation_errors.data.instance}')
+
+    # 3. Validate invalid SBOM and inspect all errors
+    print('\nChecking invalid JSON SBOM for all errors...')
+    try:
+        all_validation_errors = json_validator.validate_str(INVALID_JSON_SBOM, all_errors=True)
+    except MissingOptionalDependencyException as error:
+        print('JSON validation was skipped:', error)
+    else:
+        if all_validation_errors:
+            print('Validation failed as expected (all errors).')
+            for e in all_validation_errors:
+                print(f'Error Message: {e.data.message}')
+                print(f'JSON Path:     {e.data.json_path}')
+                print(f'Invalid Data:  {e.data.instance}')
 
 # endregion JSON Validation
 
