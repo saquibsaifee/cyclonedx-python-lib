@@ -108,7 +108,7 @@ class TestAnnotation(unittest.TestCase):
         )
 
         self.assertEqual(annotation.bom_ref.value, 'anno-1')
-        self.assertEqual(list(annotation.subjects)[0].value, 'subject-1')
+        self.assertEqual(str(list(annotation.subjects)[0]), 'subject-1')
         self.assertEqual(annotation.annotator, self.annotator)
         self.assertEqual(annotation.timestamp, self.timestamp)
         self.assertEqual(annotation.text, 'A test annotation')
@@ -118,7 +118,7 @@ class TestAnnotation(unittest.TestCase):
         self.assertEqual(annotation.bom_ref.value, 'anno-2')
 
         annotation.subjects = [BomRef(value='subject-2')]
-        self.assertEqual(list(annotation.subjects)[0].value, 'subject-2')
+        self.assertEqual(str(list(annotation.subjects)[0]), 'subject-2')
 
         a2 = Annotator(individual=OrganizationalContact(name='John'))
         annotation.annotator = a2
