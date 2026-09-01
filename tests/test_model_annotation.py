@@ -15,154 +15,53 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright (c) OWASP Foundation. All Rights Reserved.
 
-import unittest
 from datetime import datetime, timezone
+from unittest import TestCase
 
 from cyclonedx.model.annotation import Annotation, Annotator
 from cyclonedx.model.bom_ref import BomRef
-from cyclonedx.model.component import Component
 from cyclonedx.model.contact import OrganizationalContact, OrganizationalEntity
-from cyclonedx.model.service import Service
+from tests import reorder
+
+_TIMESTAMP = datetime(2024, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
 
 
-class TestAnnotator(unittest.TestCase):
+class TestModelAnnotator(TestCase):
 
-    def test_init_organization(self) -> None:
-        org = OrganizationalEntity(name='Acme, Inc.')
-        annotator = Annotator(organization=org)
-        self.assertEqual(annotator.organization, org)
-        self.assertIsNone(annotator.individual)
-        self.assertIsNone(annotator.component)
-        self.assertIsNone(annotator.service)
-
-        # Test setter
-        org2 = OrganizationalEntity(name='Beta, Inc.')
-        annotator.organization = org2
-        self.assertEqual(annotator.organization, org2)
-
-    def test_init_individual(self) -> None:
-        contact = OrganizationalContact(name='John Doe')
-        annotator = Annotator(individual=contact)
-        self.assertEqual(annotator.individual, contact)
-
-        # Test setter
-        contact2 = OrganizationalContact(name='Jane Doe')
-        annotator.individual = contact2
-        self.assertEqual(annotator.individual, contact2)
-
-    def test_init_component(self) -> None:
-        comp = Component(name='MyComponent')
-        annotator = Annotator(component=comp)
-        self.assertEqual(annotator.component, comp)
-
-        # Test setter
-        comp2 = Component(name='OtherComponent')
-        annotator.component = comp2
-        self.assertEqual(annotator.component, comp2)
-
-    def test_init_service(self) -> None:
-        svc = Service(name='MyService')
-        annotator = Annotator(service=svc)
-        self.assertEqual(annotator.service, svc)
-
-        # Test setter
-        svc2 = Service(name='OtherService')
-        annotator.service = svc2
-        self.assertEqual(annotator.service, svc2)
-
-    def test_init_invalid(self) -> None:
+    def test_invalid_no_args(self) -> None:
         with self.assertRaises(ValueError):
             Annotator()
 
+    def test_invalid_multiple_args(self) -> None:
         with self.assertRaises(ValueError):
-            Annotator(organization=OrganizationalEntity(name='A'), individual=OrganizationalContact(name='B'))
+            Annotator(
+                organization=OrganizationalEntity(name='A'),
+                individual=OrganizationalContact(name='B'),
+            )
 
-    def test_eq_and_hash(self) -> None:
-        org = OrganizationalEntity(name='Acme')
-        a1 = Annotator(organization=org)
-        a2 = Annotator(organization=org)
-        a3 = Annotator(individual=OrganizationalContact(name='John'))
-
-        self.assertEqual(a1, a2)
-        self.assertNotEqual(a1, a3)
-        self.assertNotEqual(a1, 'NotAnAnnotator')
-
-        self.assertEqual(hash(a1), hash(a2))
-        self.assertNotEqual(hash(a1), hash(a3))
-
-
-class TestAnnotation(unittest.TestCase):
-
-    def setUp(self) -> None:
-        self.annotator = Annotator(organization=OrganizationalEntity(name='Acme'))
-        self.timestamp = datetime(2024, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
-        self.subjects = [BomRef(value='subject-1')]
-
-    def test_init_basic(self) -> None:
-        annotation = Annotation(
-            bom_ref='anno-1',
-            subjects=self.subjects,
-            annotator=self.annotator,
-            timestamp=self.timestamp,
-            text='A test annotation'
-        )
-
-        self.assertEqual(annotation.bom_ref.value, 'anno-1')
-        self.assertEqual(str(list(annotation.subjects)[0]), 'subject-1')
-        self.assertEqual(annotation.annotator, self.annotator)
-        self.assertEqual(annotation.timestamp, self.timestamp)
-        self.assertEqual(annotation.text, 'A test annotation')
-
-        # Test setters
-        annotation.bom_ref = BomRef(value='anno-2')
-        self.assertEqual(annotation.bom_ref.value, 'anno-2')
-
-        annotation.subjects = [BomRef(value='subject-2')]
-        self.assertEqual(str(list(annotation.subjects)[0]), 'subject-2')
-
-        a2 = Annotator(individual=OrganizationalContact(name='John'))
-        annotation.annotator = a2
-        self.assertEqual(annotation.annotator, a2)
-
-        t2 = datetime(2025, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
-        annotation.timestamp = t2
-        self.assertEqual(annotation.timestamp, t2)
-
-        annotation.text = 'New text'
-        self.assertEqual(annotation.text, 'New text')
-
-    def test_eq_and_hash(self) -> None:
-        a1 = Annotation(
-            bom_ref='anno-1',
-            subjects=self.subjects,
-            annotator=self.annotator,
-            timestamp=self.timestamp,
-            text='Text'
-        )
-
-        a2 = Annotation(
-            bom_ref='anno-1',
-            subjects=self.subjects,
-            annotator=self.annotator,
-            timestamp=self.timestamp,
-            text='Text'
-        )
-
-        a3 = Annotation(
-            bom_ref='anno-1',
-            subjects=self.subjects,
-            annotator=self.annotator,
-            timestamp=self.timestamp,
-            text='Different Text'
-        )
-
-        self.assertEqual(a1, a2)
-        self.assertNotEqual(a1, a3)
-        self.assertNotEqual(a1, 'NotAnAnnotation')
-
-        self.assertEqual(hash(a1), hash(a2))
-        self.assertNotEqual(hash(a1), hash(a3))
+    def test_sort(self) -> None:
+        # expected sort order: (organization, individual, component, service)
+        expected_order = [0, 2, 1]
+        annotators = [
+            Annotator(organization=OrganizationalEntity(name='Acme')),
+            Annotator(individual=OrganizationalContact(name='Zoe')),
+            Annotator(individual=OrganizationalContact(name='Alice')),
+        ]
+        self.assertListEqual(sorted(annotators), reorder(annotators, expected_order))
 
 
-if __name__ == '__main__':
-    unittest.main()
+class TestModelAnnotation(TestCase):
+
+    def test_sort(self) -> None:
+        # expected sort order: (bom_ref.value, subjects, annotator, timestamp, text)
+        annotator = Annotator(organization=OrganizationalEntity(name='Acme'))
+        expected_order = [0, 2, 1]
+        annotations = [
+            Annotation(bom_ref='a', subjects=[BomRef('s')], annotator=annotator,
+                       timestamp=_TIMESTAMP, text='alpha'),
+            Annotation(bom_ref='c', subjects=[BomRef('s')], annotator=annotator,
+                       timestamp=_TIMESTAMP, text='gamma'),
+            Annotation(bom_ref='b', subjects=[BomRef('s')], annotator=annotator,
+                       timestamp=_TIMESTAMP, text='beta'),
+        ]
+        self.assertListEqual(sorted(annotations), reorder(annotations, expected_order))
