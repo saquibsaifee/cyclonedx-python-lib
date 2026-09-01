@@ -1689,8 +1689,12 @@ class Component(Dependable):
         if include_self:
             components.add(self)
 
-        for c in self.components:
-            components.update(c.get_all_nested_components(include_self=True))
+        stack = list(self.components)
+        while stack:
+            current = stack.pop()
+            if current not in components:
+                components.add(current)
+                stack.extend(current.components)
 
         return components
 
