@@ -24,6 +24,7 @@ from py_serializable.helpers import XsdDateTime
 from sortedcontainers import SortedSet
 
 from .._internal.bom_ref import bom_ref_from_str as _bom_ref_from_str
+from .._internal.compare import ComparableTuple as _ComparableTuple
 from ..exception.serialization import SerializationOfUnexpectedValueException
 from .bom_ref import BomRef
 from .component import Component
@@ -46,11 +47,11 @@ class _SubjectsSerializationHelper(serializable.helpers.BaseHelper):
             f'Attempt to serialize a non-subjects collection: {o!r}')
 
     @classmethod
-    def deserialize(cls, o: Any) -> set[BomRef]:
-        subjects: set[BomRef] = set()
+    def deserialize(cls, o: Any) -> 'set[_AnnotationSubject]':
+        subjects: set[_AnnotationSubject] = set()
         if isinstance(o, list):
             for v in o:
-                subjects.add(BomRef(value=str(v)))
+                subjects.add(_AnnotationSubject(ref=BomRef(value=str(v))))
         return subjects
 
     @classmethod
@@ -159,13 +160,26 @@ class Annotator:
     def service(self, service: Optional[Service]) -> None:
         self._service = service
 
+    def __comparable_tuple(self) -> _ComparableTuple:
+        return _ComparableTuple((
+            self.organization, self.individual, self.component, self.service
+        ))
+
     def __eq__(self, other: object) -> bool:
         if isinstance(other, Annotator):
-            return hash(other) == hash(self)
+            return self.__comparable_tuple() == other.__comparable_tuple()
         return False
 
+    def __lt__(self, other: Any) -> bool:
+        if isinstance(other, Annotator):
+            return self.__comparable_tuple() < other.__comparable_tuple()
+        return NotImplemented
+
     def __hash__(self) -> int:
-        return hash((self.organization, self.individual, self.component, self.service))
+        return hash(self.__comparable_tuple())
+
+    def __repr__(self) -> str:
+        return f'<Annotator id={id(self)}>'
 
 
 @serializable.serializable_class(ignore_unknown_during_deserialization=True)
@@ -258,10 +272,24 @@ class Annotation:
     def text(self, text: str) -> None:
         self._text = text
 
+    def __comparable_tuple(self) -> _ComparableTuple:
+        return _ComparableTuple((
+            self.bom_ref.value, _ComparableTuple(self.subjects),
+            self.annotator, self.timestamp, self.text
+        ))
+
     def __eq__(self, other: object) -> bool:
         if isinstance(other, Annotation):
-            return hash(other) == hash(self)
+            return self.__comparable_tuple() == other.__comparable_tuple()
         return False
 
+    def __lt__(self, other: Any) -> bool:
+        if isinstance(other, Annotation):
+            return self.__comparable_tuple() < other.__comparable_tuple()
+        return NotImplemented
+
     def __hash__(self) -> int:
-        return hash((self.bom_ref, tuple(self.subjects), self.annotator, self.timestamp, self.text))
+        return hash(self.__comparable_tuple())
+
+    def __repr__(self) -> str:
+        return f'<Annotation bom-ref={self.bom_ref.value}>'
