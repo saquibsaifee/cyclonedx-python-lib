@@ -168,6 +168,7 @@ class BomMetaData:
         self.lifecycles = lifecycles or []
         self.distribution_constraints = distribution_constraints
         # deprecated properties below
+        self._manufacture: Optional[OrganizationalEntity] = None
         self.manufacture = manufacture
 
     @property
@@ -267,6 +268,9 @@ class BomMetaData:
             None
         """
         self._component = component
+        if self._component and self._manufacture:
+            self._component.manufacturer = self._manufacture
+            self._manufacture = None
 
     @property
     @serializable.view(SchemaVersion1Dot2)
@@ -283,6 +287,8 @@ class BomMetaData:
         Returns:
             `OrganizationalEntity` if set else `None`
         """
+        if self.component and self.component.manufacturer:
+            return self.component.manufacturer
         return self._manufacture
 
     @manufacture.setter
@@ -293,6 +299,10 @@ class BomMetaData:
         """
         if manufacture is not None:
             SchemaDeprecationWarning1Dot6._warn('bom.metadata.manufacture', 'bom.metadata.component.manufacturer')
+            if self.component:
+                self.component.manufacturer = manufacture
+                self._manufacture = None
+                return
         self._manufacture = manufacture
 
     @property
