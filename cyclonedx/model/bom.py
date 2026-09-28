@@ -267,6 +267,8 @@ class BomMetaData:
             None
         """
         self._component = component
+        if self._component and getattr(self, '_manufacture', None) and not self._component.manufacturer:
+            self._component.manufacturer = self._manufacture
 
     @property
     @serializable.view(SchemaVersion1Dot2)
@@ -283,17 +285,17 @@ class BomMetaData:
         Returns:
             `OrganizationalEntity` if set else `None`
         """
+        if self.component and self.component.manufacturer:
+            return self.component.manufacturer
         return self._manufacture
 
     @manufacture.setter
     def manufacture(self, manufacture: Optional[OrganizationalEntity]) -> None:
-        """
-        @todo Based on https://github.com/CycloneDX/specification/issues/346,
-              we should set this data on `.component.manufacturer`.
-        """
         if manufacture is not None:
             SchemaDeprecationWarning1Dot6._warn('bom.metadata.manufacture', 'bom.metadata.component.manufacturer')
         self._manufacture = manufacture
+        if self.component:
+            self.component.manufacturer = manufacture
 
     @property
     @serializable.view(SchemaVersion1Dot6)

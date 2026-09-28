@@ -99,6 +99,43 @@ class TestBomMetaData(TestCase):
         self.assertEqual(0, len(metadata.properties))
         self.assertEqual(0, len(metadata.tools))
 
+    def test_bom_metadata_manufacture_updates_component_manufacturer(self) -> None:
+        component = Component(name='test_component')
+        metadata = BomMetaData(component=component)
+        manufacturer = OrganizationalEntity(name='test_manufacturer')
+
+        # When setting manufacture on metadata, it should update component.manufacturer
+        metadata.manufacture = manufacturer
+
+        self.assertEqual(metadata.manufacture, manufacturer)
+        self.assertEqual(metadata.component.manufacturer, manufacturer)
+        self.assertEqual(metadata._manufacture, manufacturer)
+
+    def test_bom_metadata_component_syncs_manufacture(self) -> None:
+        metadata = BomMetaData(component=None)
+        manufacturer = OrganizationalEntity(name='test_manufacturer')
+
+        # When setting manufacture first
+        metadata.manufacture = manufacturer
+
+        # Then setting component
+        component = Component(name='test_component')
+        metadata.component = component
+
+        # component.manufacturer should be updated
+        self.assertEqual(metadata.component.manufacturer, manufacturer)
+
+    def test_bom_metadata_manufacture_without_component(self) -> None:
+        metadata = BomMetaData(component=None)
+        manufacturer = OrganizationalEntity(name='test_manufacturer')
+
+        # When setting manufacture on metadata without a component, it should only set _manufacture
+        metadata.manufacture = manufacturer
+
+        self.assertEqual(metadata.manufacture, manufacturer)
+        self.assertEqual(metadata._manufacture, manufacturer)
+        self.assertIsNone(metadata.component)
+
     def test_basic_bom_metadata(self) -> None:
         tools = [
             Tool(name='tool_1'),
