@@ -34,7 +34,7 @@ from cyclonedx.model import (
     HashType,
     IdentifiableAction,
     Note,
-    NoteText,
+    AttachedText,
     Property,
     XsUri,
 )
@@ -384,15 +384,15 @@ class TestModelIssueType(TestCase):
 class TestModelNote(TestCase):
 
     def test_note_plain_text(self) -> None:
-        n = Note(text=NoteText(content='Some simple plain text'))
+        n = Note(text=AttachedText(content='Some simple plain text'))
         self.assertEqual(n.text.content, 'Some simple plain text')
-        self.assertEqual(n.text.content_type, NoteText.DEFAULT_CONTENT_TYPE)
+        self.assertEqual(n.text.content_type, AttachedText.DEFAULT_CONTENT_TYPE)
         self.assertIsNone(n.locale)
         self.assertIsNone(n.text.encoding)
 
     def test_note_invalid_locale(self) -> None:
         with self.assertRaises(InvalidLocaleTypeException):
-            Note(text=NoteText(content='Some simple plain text'), locale='invalid-locale')
+            Note(text=AttachedText(content='Some simple plain text'), locale='invalid-locale')
 
     def test_note_encoded_text_with_locale(self) -> None:
         text_content: str = base64.b64encode(
@@ -400,7 +400,7 @@ class TestModelNote(TestCase):
         ).decode(encoding='UTF-8')
 
         n = Note(
-            text=NoteText(
+            text=AttachedText(
                 content=text_content, content_type='text/plain; charset=UTF-8', encoding=Encoding.BASE_64
             ), locale='en-GB'
         )
@@ -413,32 +413,12 @@ class TestModelNote(TestCase):
         # expected sort order: ([locale], text)
         expected_order = [1, 2, 0, 3, 5, 4]
         notes = [
-            Note(text=NoteText(content='c'), locale='en-GB'),
-            Note(text=NoteText(content='a'), locale='en-GB'),
-            Note(text=NoteText(content='b'), locale='en-GB'),
-            Note(text=NoteText(content='d'), locale='en-GB'),
-            Note(text=NoteText(content='a')),
-            Note(text=NoteText(content='a'), locale='en-US'),
-        ]
-        sorted_notes = sorted(notes)
-        expected_notes = reorder(notes, expected_order)
-        self.assertListEqual(sorted_notes, expected_notes)
-
-
-class TestModelNoteText(TestCase):
-
-    def test_sort(self) -> None:
-        # expected sort order: (content, [content_type], [encoding])
-        expected_order = [1, 7, 4, 5, 6, 2, 0, 3]
-        notes = [
-            NoteText(content='c'),
-            NoteText(content='a'),
-            NoteText(content='b'),
-            NoteText(content='d'),
-            NoteText(content='b', content_type='a'),
-            NoteText(content='b', content_type='b'),
-            NoteText(content='b', content_type='c'),
-            NoteText(content='b', content_type='a', encoding=Encoding.BASE_64),
+            Note(text=AttachedText(content='c'), locale='en-GB'),
+            Note(text=AttachedText(content='a'), locale='en-GB'),
+            Note(text=AttachedText(content='b'), locale='en-GB'),
+            Note(text=AttachedText(content='d'), locale='en-GB'),
+            Note(text=AttachedText(content='a')),
+            Note(text=AttachedText(content='a'), locale='en-US'),
         ]
         sorted_notes = sorted(notes)
         expected_notes = reorder(notes, expected_order)
@@ -516,17 +496,17 @@ class TestModelXsUri(TestCase):
 
     def test_note_with_no_locale(self) -> None:
         self.assertIsInstance(
-            Note(text=NoteText(content='Something')), Note
+            Note(text=AttachedText(content='Something')), Note
         )
 
     def test_note_with_valid_locale(self) -> None:
         self.assertIsInstance(
-            Note(text=NoteText(content='Something'), locale='en-GB'), Note
+            Note(text=AttachedText(content='Something'), locale='en-GB'), Note
         )
 
     def test_note_with_invalid_locale(self) -> None:
         with self.assertRaises(InvalidLocaleTypeException):
-            Note(text=NoteText(content='Something'), locale='rubbish')
+            Note(text=AttachedText(content='Something'), locale='rubbish')
 
     def test_sort(self) -> None:
         # expected sort order: (uri)
