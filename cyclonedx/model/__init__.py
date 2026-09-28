@@ -261,6 +261,9 @@ class AttachedText:
     def __repr__(self) -> str:
         return f'<AttachedText content-type={self.content_type}, encoding={self.encoding}>'
 
+# NoteText is deprecated - use AttachedText instead
+NoteText = AttachedText
+
 
 @serializable.serializable_enum
 class HashAlgorithm(str, Enum):
@@ -956,98 +959,6 @@ class Property:
 
 
 @serializable.serializable_class(ignore_unknown_during_deserialization=True)
-class NoteText:
-    """
-    This is our internal representation of the Note.text complex type that can be used in multiple places within
-    a CycloneDX BOM document.
-
-    .. note::
-        See the CycloneDX Schema definition: https://cyclonedx.org/docs/1.7/xml/#type_releaseNotesType
-    """
-
-    DEFAULT_CONTENT_TYPE: str = 'text/plain'
-
-    def __init__(
-        self, *,
-        content: str,
-        content_type: Optional[str] = None,
-        encoding: Optional[Encoding] = None,
-    ) -> None:
-        self.content = content
-        self.content_type = content_type or NoteText.DEFAULT_CONTENT_TYPE
-        self.encoding = encoding
-
-    @property
-    @serializable.xml_name('.')
-    def content(self) -> str:
-        """
-        Get the text content of this Note.
-
-        Returns:
-            `str` note content
-        """
-        return self._content
-
-    @content.setter
-    def content(self, content: str) -> None:
-        self._content = content
-
-    @property
-    @serializable.xml_attribute()
-    @serializable.xml_name('content-type')
-    def content_type(self) -> Optional[str]:
-        """
-        Get the content-type of this Note.
-
-        Defaults to 'text/plain' if one was not explicitly specified.
-
-        Returns:
-            `str` content-type
-        """
-        return self._content_type
-
-    @content_type.setter
-    def content_type(self, content_type: str) -> None:
-        self._content_type = content_type
-
-    @property
-    @serializable.xml_attribute()
-    def encoding(self) -> Optional[Encoding]:
-        """
-        Get the encoding method used for the note's content.
-
-        Returns:
-            `Encoding` if set else `None`
-        """
-        return self._encoding
-
-    @encoding.setter
-    def encoding(self, encoding: Optional[Encoding]) -> None:
-        self._encoding = encoding
-
-    def __comparable_tuple(self) -> _ComparableTuple:
-        return _ComparableTuple((
-            self.content, self.content_type, self.encoding
-        ))
-
-    def __eq__(self, other: object) -> bool:
-        if isinstance(other, NoteText):
-            return self.__comparable_tuple() == other.__comparable_tuple()
-        return False
-
-    def __lt__(self, other: Any) -> bool:
-        if isinstance(other, NoteText):
-            return self.__comparable_tuple() < other.__comparable_tuple()
-        return NotImplemented
-
-    def __hash__(self) -> int:
-        return hash(self.__comparable_tuple())
-
-    def __repr__(self) -> str:
-        return f'<NoteText content_type={self.content_type}, encoding={self.encoding}>'
-
-
-@serializable.serializable_class(ignore_unknown_during_deserialization=True)
 class Note:
     """
     This is our internal representation of the Note complex type that can be used in multiple places within
@@ -1056,31 +967,31 @@ class Note:
     .. note::
         See the CycloneDX Schema definition: https://cyclonedx.org/docs/1.7/xml/#type_releaseNotesType
 
-    @todo: Replace ``NoteText`` with ``AttachedText``?
+
     """
 
     _LOCALE_TYPE_REGEX = re.compile(r'^[a-z]{2}(?:\-[A-Z]{2})?$')
 
     def __init__(
         self, *,
-        text: NoteText,
+        text: AttachedText,
         locale: Optional[str] = None,
     ) -> None:
         self.text = text
         self.locale = locale
 
     @property
-    def text(self) -> NoteText:
+    def text(self) -> AttachedText:
         """
         Specifies the full content of the release note.
 
         Returns:
-            `NoteText`
+            `AttachedText`
         """
         return self._text
 
     @text.setter
-    def text(self, text: NoteText) -> None:
+    def text(self, text: AttachedText) -> None:
         self._text = text
 
     @property

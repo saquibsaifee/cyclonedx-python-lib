@@ -38,7 +38,7 @@ from cyclonedx.model import (
     ExternalReferenceType,
     HashType,
     Note,
-    NoteText,
+    AttachedText,
     Property,
     XsUri,
 )
@@ -1033,13 +1033,13 @@ def get_release_notes() -> ReleaseNotes:
         resolves=[get_issue_1()],
         notes=[
             Note(
-                text=NoteText(
+                text=AttachedText(
                     content=text_content, content_type='text/plain; charset=UTF-8',
                     encoding=Encoding.BASE_64
                 ), locale='en-GB'
             ),
             Note(
-                text=NoteText(
+                text=AttachedText(
                     content=text_content, content_type='text/plain; charset=UTF-8',
                     encoding=Encoding.BASE_64
                 ), locale='en-US'
