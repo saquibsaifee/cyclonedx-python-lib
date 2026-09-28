@@ -260,7 +260,6 @@ class Service(Dependable):
         Returns:
             Set of `DataClassification`
         """
-        # TODO since CDX1.5 also supports `dataflow`, not only `DataClassification`
         return self._data
 
     @data.setter
@@ -277,7 +276,6 @@ class Service(Dependable):
         Returns:
             Set of `LicenseChoice`
         """
-        # TODO since CDX1.5 also supports `dataflow`, not only `DataClassification`
         return self._licenses
 
     @licenses.setter
